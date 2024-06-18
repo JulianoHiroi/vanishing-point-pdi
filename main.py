@@ -63,16 +63,18 @@ def ransac_vanishing_point(lines, num_iterations, threshold):
 
     return best_intersection
 
-def main ():
+
+def vanishing_point(filePath):
     # Carregar imagem
-    image = cv2.imread('imagens/image5.jpg')
-    image2 = cv2.imread('imagens/image5.jpg')
+    imagelines = cv2.imread("imagens/" +  filePath)
+    image = imagelines.copy()
+    
     # Detectar bordas
     edges = detect_edges(image)
 
     # Detectar linhas
     lines = detect_lines(edges)
-    cv2.imshow('Bordas', edges)
+    cv2.imwrite('resultados/image_edges_'+ filePath , edges)
 
     #Desenha as linhas na imagem
     for line in lines:
@@ -85,22 +87,28 @@ def main ():
         y1 = int(y0 + 1000 * (a))
         x2 = int(x0 - 1000 * (-b))
         y2 = int(y0 - 1000 * (a))
-        cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 1)
-    cv2.imshow('Linhas', image) 
+        cv2.line(imagelines, (x1, y1), (x2, y2), (0, 0, 255), 1)
+    cv2.imwrite('resultados/image_lines_'+ filePath , imagelines) 
     
     # Definir parâmetros do RANSAC
-    num_iterations = 1000
+    num_iterations = 100
     threshold = 5
 
     # Encontrar ponto de fuga
     vanishing_point = ransac_vanishing_point(lines, num_iterations, threshold)
     
     # Desenhar ponto de fuga
-    cv2.circle(image2, (int(vanishing_point[0]), int(vanishing_point[1])), 10, (0, 0, 255), -1)
+    cv2.circle(image, (int(vanishing_point[0]), int(vanishing_point[1])), 10, (0, 0, 255), -1)
+    cv2.imwrite('resultados/image_vanishing_point' + filePath , image)
 
-    cv2.imshow('Ponto de Fuga', image2)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
+
+def main ():
+    images = ["01.jpg", "02.jpg", "image1.jpeg", "image2.jpeg", "image3.jpeg", "image4.jpg", "image5.jpg", "image6.jpg", "image7.jpg", "image8.jpg"]
+    #images = ["01.jpg"]	
+
+    for(image) in images:
+        vanishing_point(image)
     
 
 if __name__ == '__main__':
