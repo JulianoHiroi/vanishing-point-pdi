@@ -30,8 +30,6 @@ def compute_intersection(line1, line2):
     else:
         return None
 
-    return intersection
-
 def distance_point_to_line(point, equation_line):
     rho, theta = equation_line[0]
     x0, y0 = point
@@ -67,8 +65,8 @@ def ransac_vanishing_point(lines, num_iterations, threshold):
 
 def main ():
     # Carregar imagem
-    image = cv2.imread('imagens/02.jpg')
-    image2 = cv2.imread('imagens/02.jpg')
+    image = cv2.imread('imagens/image5.jpg')
+    image2 = cv2.imread('imagens/image5.jpg')
     # Detectar bordas
     edges = detect_edges(image)
 
@@ -106,4 +104,5 @@ def main ():
     
 
 if __name__ == '__main__':
+
     main()
