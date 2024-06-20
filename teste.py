@@ -4,12 +4,14 @@ import random
 
 def detect_edges(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (0, 0), 1.5)
-    edges = cv2.Canny(blur, 50, 150, apertureSize=3)
+    blur = cv2.GaussianBlur(gray, (0, 0), 0.5)
+    edges = cv2.Canny(blur, 50, 200, apertureSize=3)
     return edges
 
 def detect_lines(edges):
     lines = cv2.HoughLines(edges, 1, np.pi / 180, 150)
+    # faça um assert para garantir que tenha mais de 2 linhas e manda msg se não tiver
+    assert lines is not None, "Não foi possível detectar linhas na imagem"
     return lines
 
 def compute_intersection(line1, line2):
@@ -69,6 +71,7 @@ def ransac_vanishing_point(lines, num_iterations, threshold , width , restrictAr
             best_intersection = intersection
     print (best_intersection)
     print (best_count)
+    assert best_intersection is not None, "Não foi possível encontrar o ponto de fuga"
     return best_intersection 
 
 #restrição para a direita
@@ -153,7 +156,8 @@ def vanishing_point(filePath):
 
 
 def main ():
-    images = ["ponto_fuga_2.webp"]
+    #images = ["ponto_fuga_2.webp"]
+    images = ["image6.jpg"]
 
     for(image) in images:
         vanishing_point(image)
