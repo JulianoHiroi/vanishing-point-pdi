@@ -1,15 +1,43 @@
 import cv2
 import numpy as np
 import random
+import os
 
 def detect_edges(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (0, 0), 0.5)
-    edges = cv2.Canny(blur, 50, 200, apertureSize=3)
-    return edges
+    area = gray.shape[0] * gray.shape[1]
+    print(area)
+    print(np.sum(gray))
+    blur = cv2.GaussianBlur(gray, (0, 0), 1)
+    melhor = 1000
+    melhor_i = 0
+    melhor_j = 0
+    for i in range(100 , 501 , 50):
+        for j in range(100 , 201 , 50):
+            if(i <= j):
+                continue
+            edges = cv2.Canny(blur, j, i, apertureSize=3 , L2gradient=False)
+            soma_edge  = np.sum(edges)/255
+            print("A imagem" + str(j) + "_" + str(i) + "tem porcentagem de borda : " + str(soma_edge/area))
+            distancia = np.abs((soma_edge)/area - 0.04)
+            print("distancia: " + str(distancia)   )
+            if(melhor > distancia):
+                melhor = distancia
+                melhor_i = i
+                melhor_j = j
+                img_edges = edges
+            #cv2.imwrite('resultados2/image_edges_' + str(j) + "_" + str(i) + '.jpg' , edges)
+    cv2.imwrite('resultados2/melhor_image_edges_' + str(melhor_j) + "_" + str(melhor_i) + '.jpg' , img_edges)
+    return img_edges
 
 def detect_lines(edges):
-    lines = cv2.HoughLines(edges, 1, np.pi / 180, 150)
+
+
+    # Fazer uma função que detecta as linhas da imagem
+    # 
+
+
+    lines = cv2.HoughLines(edges, 1, np.pi / 180, 150 , None, 0, 0)
     # faça um assert para garantir que tenha mais de 2 linhas e manda msg se não tiver
     assert lines is not None, "Não foi possível detectar linhas na imagem"
     return lines
@@ -105,7 +133,6 @@ def vanishing_point(filePath):
     
     # Detectar bordas
     edges = detect_edges(image)
-
     # Detectar linhas
     lines = detect_lines(edges)
     cv2.imwrite('resultados2/image_edges_'+ filePath , edges)
@@ -156,8 +183,18 @@ def vanishing_point(filePath):
 
 
 def main ():
+
+    try:
+        os.mkdir('resultados2')
+    except OSError as e:
+        pass
+
+    images = ["image7.jpg"]
     #images = ["ponto_fuga_2.webp"]
-    images = ["image6.jpg"]
+
+    # crie o diretório resultados2
+
+
 
     for(image) in images:
         vanishing_point(image)

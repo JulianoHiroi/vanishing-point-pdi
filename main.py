@@ -95,7 +95,7 @@ def vanishing_point(filePath):
     threshold = 5
 
     # Encontrar ponto de fuga
-    vanishing_point = ransac_vanishing_point(lines, num_iterations, threshold)
+    vanishing_point = ransac_vanishing_point(lines, num_iterations, threshold )
     
     # Desenhar ponto de fuga
     cv2.circle(image, (int(vanishing_point[0]), int(vanishing_point[1])), 10, (0, 0, 255), -1)
