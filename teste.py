@@ -7,25 +7,52 @@ import shutil
 def detect_edges(image):
     area = image.shape[0]*image.shape[1]
 
-    threshold = 10
-
-
+    threshold = 40
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (0, 0), 1)
-    edges = cv2.Canny(blur, min, min*3, apertureSize=3)
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # calcula bordas até que menos de 0.01% da imagem esteja setada
-    while np.sum(edges)/255 > area*0.03:
-        if min + 1 != 80:
-            min = min + 1
+    edges = cv2.Canny(blur, threshold, threshold*3, apertureSize=3)
+    i = 0
+    for i in range(10):
+        i = i + 1
+       
+        edges = cv2.Canny(blur, threshold, threshold*3, apertureSize=3)
+        soma = np.sum(edges)/255
+        if soma > area*0.04:
+            
+            threshold = threshold + threshold//(2.3**i) + 1
+        elif soma < area*0.03:
+            
+            threshold = threshold - threshold//(2**i) + 1
         else:
             break
-        edges = cv2.Canny(blur, min, min*3, apertureSize=3)
+    #print("A porcentagem de borda da imagem é: ", soma/area*100, "%")
     return edges
+
+def filter_lines(lines):
+    # para linhas com rhos e thetas muito próximos, mantenha apenas 10 linhas para cada grupo
+    # e remova as linhas restantes
+    #print(lines)
+    lines = sorted(lines, key=lambda x: x[0][0])
+    #print(lines)
+    i = 0
+    while i < len(lines) - 1:
+        if np.abs(lines[i][0][0] - lines[i + 1][0][0]) < 20 and np.abs(lines[i][0][1] - lines[i + 1][0][1]) < 0.2:
+            del lines[i + 1]
+        else:
+            i += 1
+
+    return lines
+
 
 def detect_lines(edges, min_points = 100):
 
+
     lines = cv2.HoughLines(edges, 1, np.pi / 180, min_points)
+    print("Número de linhas detectadas: ", len(lines))
+    lines = filter_lines(lines)
+    print("Número de linhas detectadas: ", len(lines))
+
     # faça um assert para garantir que tenha mais de 2 linhas e manda msg se não tiver
     assert lines is not None, "Não foi possível detectar linhas na imagem"
     return lines
@@ -128,6 +155,9 @@ def vanishing_point(filePath):
     
     # Detectar bordas
     edges = detect_edges(image)
+    cv2.imwrite('resultados2/image_edges_'+ filePath , edges)
+    
+    
     # Detectar linhas
     lines = detect_lines(edges)
     cv2.imwrite('resultados2/image_edges_'+ filePath , edges)
@@ -143,9 +173,9 @@ def vanishing_point(filePath):
     
     cv2.circle(image, (int(vanishing_point[0][0]), int(vanishing_point[1][0])), 10, (0, 0, 255), -1)
     cv2.imwrite('resultados2/ponto1' + filePath , image)
-
+    '''
     # Faz borda brancas
-    '''imageBorda = cv2.copyMakeBorder(image, 200, 200, 200, 200, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+    imageBorda = cv2.copyMakeBorder(image, 200, 200, 200, 200, cv2.BORDER_CONSTANT, value=[255, 255, 255])
     cv2.circle(imageBorda, (int(vanishing_point[0][0] + 200), int(vanishing_point[1][0] + 200)), 10, (0, 0, 255), -1)
     cv2.circle(imageBorda, (int(vanishing_point2[0][0] + 200), int(vanishing_point2[1][0] + 200)), 10, (0, 0, 255), -1)
     cv2.imwrite('resultados2/image_borda_pontos' + filePath , imageBorda)'''
@@ -156,7 +186,7 @@ def vanishing_point(filePath):
 def main ():
 
 
-
+    
     try:
         # Remove the directory 'resultados2' if it exists
         if os.path.exists('resultados2'):
@@ -169,11 +199,11 @@ def main ():
         print(f"Error: {e}")
 
     images = ["01.jpg", "02.jpg", "image1.jpeg", "image2.jpeg", "image3.jpeg", "image4.jpg", "image5.jpg", "image6.jpg", "image7.jpg", "image8.jpg"]
+    #images = ["image5.jpg"]
 
     # crie o diretório resultados2
-
-
-
+   
+   
     for(image) in images:
         vanishing_point(image)
     
