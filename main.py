@@ -3,13 +3,29 @@ import numpy as np
 import random
 
 def detect_edges(image):
+    area = image.shape[0]*image.shape[1]
+
+    min = 10
+    max = 100
+
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (0, 0), 1)
-    edges = cv2.Canny(blur, 50, 150, apertureSize=3)
+    edges = cv2.Canny(blur, min, min*3, apertureSize=3)
+
+    # calcula bordas até que menos de 0.01% da imagem esteja setada
+    while np.sum(edges)/255 > area*0.03:
+        if min + 1 != 80:
+            min = min + 1
+            max = max + 1
+        else:
+            break
+        edges = cv2.Canny(blur, min, min*3, apertureSize=3)
     return edges
 
-def detect_lines(edges):
-    lines = cv2.HoughLines(edges, 1, np.pi / 180, 150)
+def detect_lines(edges, min_points = 100):
+    lines = cv2.HoughLines(edges, 1, np.pi / 180, min_points)
+    # faça um assert para garantir que tenha mais de 2 linhas e manda msg se não tiver
+    assert lines is not None, "Não foi possível detectar linhas na imagem"
     return lines
 
 def compute_intersection(line1, line2):
