@@ -37,7 +37,7 @@ def filter_lines(lines):
     #print(lines)
     i = 0
     while i < len(lines) - 1:
-        if np.abs(lines[i][0][0] - lines[i + 1][0][0]) < 20 and np.abs(lines[i][0][1] - lines[i + 1][0][1]) < 0.2:
+        if np.abs(lines[i][0][0] - lines[i + 1][0][0]) < 10 and np.abs(lines[i][0][1] - lines[i + 1][0][1]) < 0.1:
             del lines[i + 1]
         else:
             i += 1
@@ -98,54 +98,44 @@ def draw_lines(lines, filePath, image):
         cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 1)
     cv2.imwrite('resultados2/image_lines_'+ filePath , image)
 
-def ransac_vanishing_point(lines, num_iterations, threshold , width):
 
-    best_intersection = None
-    best_count = 0
-    
+
+# Função para encontrar o ponto de fuga
+# para isso ele irá identificar os pontos e categorizando em 3 lugares diferente (direita, esquerda e centro)
+def ransac_vanishing_point(lines, num_iterations, threshold, width):
+    best_intersection = np.zeros((3, 2))  # Inicializar um array 3x2 de zeros para as melhores interseções
+    best_count = np.zeros(3, dtype=int)  # Inicializar um array de zeros para as melhores contagens
 
     for _ in range(num_iterations):
-
         line1, line2 = random.sample(list(lines), 2)
         intersection = compute_intersection(line1, line2)
         if intersection is None:
             continue
 
+        # Converta a interseção para um formato 1D se estiver em formato de coluna
+        intersection = intersection.flatten()
+
         count = 0
         for line in lines:
             if distance_point_to_line(intersection, line) < threshold:
                 count += 1
-
-        if count > best_count:
-            best_count = count
-            best_intersection = intersection
-
-
-    assert best_intersection is not None, "Não foi possível encontrar o ponto de fuga"
-    return best_intersection 
-
-#restrição para a direita
-def restrictRight(intersection, width):
-    if intersection[0] > width//2 :
-        return True
-    return False
-
-# restringe para a esquerda
-def restrictLeft(intersection, width):
-    if intersection[0] < width//2:
-        return True
-    return False
-
-# restringe para cima
-def restrictTop(intersection, height):
-    if intersection[1] < height//2:
-        return True
-    return False
-#restringe para baixo
-def restrictBottom(intersection, height):
-    if intersection[1] > height//2:
-        return True
-    return False
+        
+        # Atualizar best_count e best_intersection de acordo com a posição da interseção
+        if intersection[0] < 0 and count > best_count[0]:
+            best_count[0] = count
+            best_intersection[0] = intersection
+        elif intersection[0] > width and count > best_count[2]:
+            best_count[2] = count
+            best_intersection[2] = intersection
+        elif 0 <= intersection[0] <= width and count > best_count[1]:
+            best_count[1] = count
+            best_intersection[1] = intersection
+    
+    print("A operação")
+    print(best_count)
+    
+    best_count_not_zero = best_count != 0
+    return best_intersection[best_count_not_zero]
 
 
 def vanishing_point(filePath):
@@ -169,16 +159,16 @@ def vanishing_point(filePath):
     
     # Encontrar ponto de fuga
     print("Vanishing Point da imagem " + filePath + " : ")
-    vanishing_point = ransac_vanishing_point(lines, num_iterations, threshold , image.shape[0] )
     
-    cv2.circle(image, (int(vanishing_point[0][0]), int(vanishing_point[1][0])), 10, (0, 0, 255), -1)
-    cv2.imwrite('resultados2/ponto1' + filePath , image)
-    '''
-    # Faz borda brancas
+    vanishing_point = ransac_vanishing_point(lines, num_iterations, threshold, image.shape[1])
+
+    vanishing_point = np.array(vanishing_point)
+
     imageBorda = cv2.copyMakeBorder(image, 200, 200, 200, 200, cv2.BORDER_CONSTANT, value=[255, 255, 255])
-    cv2.circle(imageBorda, (int(vanishing_point[0][0] + 200), int(vanishing_point[1][0] + 200)), 10, (0, 0, 255), -1)
-    cv2.circle(imageBorda, (int(vanishing_point2[0][0] + 200), int(vanishing_point2[1][0] + 200)), 10, (0, 0, 255), -1)
-    cv2.imwrite('resultados2/image_borda_pontos' + filePath , imageBorda)'''
+    for vanishing in vanishing_point:
+        print(vanishing)
+        cv2.circle(imageBorda, (int(vanishing[0]+ 200) , int(vanishing[1])+ 200) , 10, (0, 0, 255), -1)
+    cv2.imwrite('resultados2/ponto1' + filePath , imageBorda)
     
 
 
@@ -199,7 +189,7 @@ def main ():
         print(f"Error: {e}")
 
     images = ["01.jpg", "02.jpg", "image1.jpeg", "image2.jpeg", "image3.jpeg", "image4.jpg", "image5.jpg", "image6.jpg", "image7.jpg", "image8.jpg"]
-    #images = ["image5.jpg"]
+    #images = ["image4.jpg"]
 
     # crie o diretório resultados2
    

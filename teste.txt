@@ -1,0 +1,17 @@
+O canny tem o limite de 0 a 255 de entrada 
+
+O valMin tem que ser 3* maior que o valMax
+
+sabendo disso o valor min tem que ser entre 0 a 85
+
+inicia com 40
+vai para 20 
+dps para 10
+dps 5 
+dps 3
+dps 1 
+continua no 1
+
+
+
+Para a detecção de 2 pontos de fuga iremos adaptar a função do ransac para que ele pegue os melhores pontos de cada região: meio , direita e esquerda e retorne esses três pontos na função
