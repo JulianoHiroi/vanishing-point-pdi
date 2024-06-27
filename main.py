@@ -156,7 +156,7 @@ def draw_lines(lines, filePath, image, color = True):
             cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 1)
         else:
             cv2.line(image, (x1, y1), (x2, y2), (255), 1)
-    cv2.imwrite('resultados/image_lines_'+ filePath , image)
+    #cv2.imwrite('resultados/image_lines_'+ filePath , image)
 
 
 # gera imagem com linhas passando pelo ponto de fuga
@@ -170,6 +170,7 @@ def generate_perspective_image(vanishing_point, imageBorda, filePath):
 
     lines = detect_lines(perspective_image, 0, False)
     draw_lines(lines, "perspective_" + filePath, imageBorda)
+    cv2.imwrite('resultados/perspective_image_'+ filePath , imageBorda)
 
     return perspective_image, lines
 
@@ -371,7 +372,7 @@ def vanishing_point(filePath):
     cv2.imwrite('resultados/image_edges_'+ filePath , edges)
     #Desenha as linhas na imagem
     draw_lines(lines, filePath ,  imagelines) 
-
+    cv2.imwrite('resultados/image_lines_'+ filePath , imagelines)
     # Definir parâmetros do RANSAC
     num_iterations = 1000
     threshold = 5
