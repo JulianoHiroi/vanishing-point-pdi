@@ -277,7 +277,7 @@ def vanishing_point(filePath):
 
     cv2.imwrite('resultados/ponto_' + filePath , imageBorda)
 
-    perspective_image, lines = generate_perspective_image(vanishing_point, imageBorda, filePath)
+    generate_perspective_image(vanishing_point, imageBorda, filePath)
     
 
     if len(vanishing_point) == 1:
