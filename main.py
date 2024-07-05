@@ -45,56 +45,6 @@ def filter_lines(lines, intensity = 10):
     return lines
 
 
-def verificate_direction(perspective_image, sumrow, sumcol, col, row, vanishrow, vanishcol):
-
-     change = 2
-
-     col2 = col+sumcol
-     row2 = row+sumrow
-
-     if col+sumcol not in range(0, perspective_image.shape[1]):
-         changecol = False
-         col2 = col
-         change = change - 1
-     else:
-         changecol = True
-
-     if row+sumrow not in range(0, perspective_image.shape[0]):
-         changerow = False
-         row2 = row
-         change = change - 1
-     else:
-         changerow = True
-     
-     # anda na direção onde pixel estiver branco
-     if change != 0:
-         if perspective_image[row][col2] == 255 and vanishcol != col and changecol == True:
-             col = col + sumcol
-         elif perspective_image[row2][col] == 255 and vanishrow != row and changerow == True:
-             row = row + sumrow
-         elif perspective_image[row2][col2] == 255 and vanishrow != row and vanishcol != col and changecol == True and changerow == True:
-             row = row + sumrow
-             col = col + sumcol
-
-     return row, col, change
-
-
-def calculate_direction(row, col, vanishrow, vanishcol):
-    if vanishrow - row > 0:
-        sumrow = 1
-    elif vanishrow - row < 0:
-        sumrow = -1
-    else:
-        sumrow = 0
-    if vanishcol - col > 0:
-        sumcol = 1
-    elif vanishcol - col < 0:
-        sumcol = -1
-    else:
-        sumcol = 0
-
-    return sumrow, sumcol
-    
 
 def detect_lines(edges, min_points = 100, filterLines = True):
 
@@ -158,7 +108,6 @@ def draw_lines(lines, filePath, image, color = True):
             cv2.line(image, (x1, y1), (x2, y2), (255), 1)
     #cv2.imwrite('resultados/image_lines_'+ filePath , image)
 
-
 # gera imagem com linhas passando pelo ponto de fuga
 def generate_perspective_image(vanishing_point, imageBorda, filePath):
    # gera imagem preta
@@ -167,8 +116,10 @@ def generate_perspective_image(vanishing_point, imageBorda, filePath):
     # coloca um pixel branco em cada ponto de fuga
     for vanishing in vanishing_point:
       perspective_image[int(vanishing[1])][int(vanishing[0])] = 255
+    
 
     lines = detect_lines(perspective_image, 0, False)
+      
     draw_lines(lines, "perspective_" + filePath, imageBorda)
     cv2.imwrite('resultados/perspective_image_'+ filePath , imageBorda)
 
@@ -202,112 +153,45 @@ def calculate_border(vanishing_point, image_shape):
     return top, bottom, left, right, vanishing_point
 
 
-def put_object(perspective_image, vanishing_point, lines, filePath, image_object):
+def generate_points(point1, point2):
+    # Primerio calcula  entre os pontos e depois calcula o ponto a 1/3 e 2/3 dessa distancia
+    distance = np.linalg.norm(point1 - point2)
+    point1_3 = point1 + (point2 - point1) / 5
+    point2_3 = point1 + 2 * (point2 - point1) / 3
+    return point1_3, point2_3
 
-    vanishcol = vanishing_point[0][0]
-    vanishrow = vanishing_point[0][1]
 
-    line_point = False
-    while line_point == False: 
+def put_object(image, vanishing_point, filePath):
+    # Vanishing point recebido é somente de imagens que possuem um ponto de fuga
+    # Dentro da imagem
+    vanishing_point = vanishing_point[0]
+
+    width = image.shape[1]
+    height = image.shape[0]
     
-            # sorteia posição onde objeto vai começar (horizontal)
-            startRow = random.sample(range(0, 100), 1)
-            startRow = startRow[0]
+    # cria oito pontos na imagem varios objetos
+    # os pontos vão ser nas quatro bordas da imagem , sendo no 1/3 e outro no 2/3
+
+    points_object_top = np.array([[width//4, 0], [3*width//4, 0]])
+    points_object_left = np.array([[0, height//4], [0, 3*height//4]])
+    points_object_right = np.array([[width, height//4], [width, 3*height//4]])
+    points_object_bottom = np.array([[width//4, height], [3*width//4, height]])
+
+    borders = np.array([points_object_top, points_object_right, points_object_bottom, points_object_left])
+
+    for i in range(4):
+        point1, point2 = generate_points(borders[i][0], vanishing_point)
+        point3, point4 = generate_points(borders[i][1], vanishing_point)
+        points = np.array([point1, point3, point4, point2])
+        points = points.astype(np.int32)
+        points = points.reshape(1, -1, 2)
+        cv2.fillPoly(image, [points], color=(255,0,0))
         
-            # sorteia duas linhas quaisquer
-            line1, line2 = random.sample(list(lines), 2)
-        
-            draw_lines([line1, line2], filePath, perspective_image, False)
-        
-            for i in range(startRow, perspective_image.shape[0]):
-                for j in range(0, perspective_image.shape[1]):
-                    if perspective_image[i][j] == 255:
-                        line_point = True
-                        break
-                if line_point == True:
-                   break
- 
-    row = i
-    col = j
-    # primeiro ponto 
-    first_point = [col, row]
 
-    # calcula para qual direção está o ponto de fuga
-    sumrow, sumcol = calculate_direction(row, col, vanishrow, vanishcol)
-    perspective_image[row][col] = 50
-    i = 0
+    cv2.imwrite('resultados/perspective_image_with_object'+ filePath , image)
 
-    # sorteia o tamanho do objeto
-    tam = random.sample(range(50, 200), 1)
+    return image
 
-    # enquanto objeto não estiver com o tamanho sorteado OU objeto não estiver encostando no ponto de fuga
-    while i!=tam[0] and (vanishrow != row and vanishcol != col ):
-        if col+sumcol in range(0, perspective_image.shape[1]) or row+sumrow in range(0, perspective_image.shape[0]):
-            
-            row, col, verificate = verificate_direction(perspective_image, sumrow, sumcol, col, row, vanishrow, vanishcol)
-            # verifica se ouve deslocamento ou não
-            if verificate == 0:
-                break
-        else:
-            break
-        
-        perspective_image[row][col] = 50
-        i = i+1
-    perspective_image[row][col] = 50
-
-    # segundo ponto
-    second_point = [col, row]
-    
-    # calcula ponto do objeto vertical ao primeiro ponto encontrado
-    row = 0
-    col = first_point[0]
-    while row != perspective_image.shape[0]:
-        if perspective_image[row][col] == 255 and col not in range(first_point[1]-3, first_point[1]+3,):
-            break
-        row = row + 1
-    if row == perspective_image.shape[0]:
-        row = row - 1
-    # terceiro ponto 
-    third_point = [col, row]
-    perspective_image[row][col] = 50
-
-    # calcula para qual direção está o ponto de fuga
-    sumrow, sumcol = calculate_direction(row, col, vanishrow, vanishcol)
-    perspective_image[row][col] = 50
-    i = 0
-
-    # enquanto objeto não estiver na coluna do segundo ponto OU objeto não estiver encostando no ponto de fuga
-    while col!=second_point[0] and (vanishrow != row and vanishcol != col ):
-        
-        if col+sumcol in range(0, perspective_image.shape[1]) or row+sumrow in range(0, perspective_image.shape[0]):
-            row, col, verificate = verificate_direction(perspective_image, sumrow, sumcol, col, row, vanishrow, vanishcol)
-
-            # verifica se ouve deslocamento ou não
-            if verificate == 0:
-                break
-        else:
-            break
-        
-        perspective_image[row][col] = 25
-        i = i+1
-
-        #  se deu ruim
-        if i == 1000:
-            break
-
-    if row == vanishrow or col == vanishcol:
-        row = row+1
-        col = col+1
-    fourth_point = [col, row]
-    perspective_image[row][col] = 25
-    cv2.circle(perspective_image, ((first_point[0]), first_point[1]), 5, (50), -1)
-    cv2.circle(perspective_image, ((second_point[0]), second_point[1]), 5, (50), -1)
-    cv2.circle(perspective_image, ((third_point[0]), third_point[1]), 5, (50), -1)
-    cv2.circle(perspective_image, ((fourth_point[0]), fourth_point[1]), 5, (50), -1)
-    cv2.imwrite('resultados/sort_line_points'+ filePath , perspective_image)
-    points = np.array([first_point, second_point, fourth_point, third_point])
-    cv2.fillPoly(image_object, [points], color=(255,0,0))
-    cv2.imwrite('resultados/perspective_image_with_object'+ filePath , image_object) 
 
 
 # Função para encontrar o ponto de fuga
@@ -391,13 +275,13 @@ def vanishing_point(filePath):
     for vanishing in vanishing_point:
         cv2.circle(imageBorda, (int(vanishing[0]), int(vanishing[1])) , 10, (0, 0, 255), -1)
 
-    cv2.imwrite('resultados/ponto1' + filePath , imageBorda)
+    cv2.imwrite('resultados/ponto_' + filePath , imageBorda)
 
     perspective_image, lines = generate_perspective_image(vanishing_point, imageBorda, filePath)
     
 
     if len(vanishing_point) == 1:
-        put_object(perspective_image, original_vanishing_point, lines, filePath, image_object)
+        put_object(image, vanishing_point, filePath)
 
 
 
@@ -417,7 +301,7 @@ def main ():
         print(f"Error: {e}")
 
     images = [ "image1.jpeg", "image2.jpeg", "image3.jpeg", "image4.jpg", "image6.jpg", "image7.jpg", "image8.jpg" , "image9.jpg", "image10.jpg"]
-    #images = ["image3.jpeg"]
+    #images = ["image1.jpeg"]
 
     # crie o diretório resultados
    
